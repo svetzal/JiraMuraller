@@ -10,44 +10,68 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var servers: [ServerConfiguration]
 
+    @State private var selectedServer: UUID?
+    @State private var selectedQuery: UUID?
+    
     var body: some View {
         NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+            Section("JIRA Servers") {
+                List(selection: $selectedServer) {
+                    ForEach(servers) { server in
+                        Text(server.name)
+                            .tag(server.id)
+                    }
+                    .onDelete(perform: deleteSelectedServerIndexes)
+                }
+                .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+                .navigationTitle("Servers")
+                .toolbar {
+                    ToolbarItem {
+                        Button(action: addServer) {
+                            Label("Add Server", systemImage: "plus")
+                        }
                     }
                 }
-                .onDelete(perform: deleteItems)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+        } content: {
+            if let serverId = selectedServer {
+                let server = servers.first(where: {$0.id == serverId})!
+                QueriesListView(server: server, selectedQuery: $selectedQuery)
+            } else {
+                Text("Select a server.")
             }
         } detail: {
-            Text("Select an item")
+            if let serverId = selectedServer,
+               let queryId = selectedQuery,
+               let server = servers.first(where: {$0.id == serverId})
+            {
+                if let query = server.queries.first(where: {$0.id == queryId})
+                {
+                    IssuesListView(query: query)
+                } else {
+                    Text("Add a query.")
+                }
+            } else {
+                Text("Select a query.")
+            }
         }
     }
 
-    private func addItem() {
+    private func addServer() {
         withAnimation {
-            let newItem = Item(timestamp: Date())
+            let newItem = ServerConfiguration(name: "svetzal", host: "svetzal.atlassian.net", username: "stacey@vetzal.com", token: "abc123")
             modelContext.insert(newItem)
+            let newQuery = JiraQuery(name: "Query 1", jql: "empty jql")
+            newItem.queries.append(newQuery)
         }
     }
-
-    private func deleteItems(offsets: IndexSet) {
+    
+    private func deleteSelectedServerIndexes(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(items[index])
+                modelContext.delete(servers[index])
             }
         }
     }
@@ -55,5 +79,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: ServerConfiguration.self, inMemory: true)
 }
