@@ -12,6 +12,9 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var servers: [ServerConfiguration]
 
+    @State private var showServerForm: Bool = false
+    @State private var serverToEdit: ServerConfiguration?
+    
     @State private var selectedServer: UUID?
     @State private var selectedQuery: UUID?
     
@@ -57,6 +60,16 @@ struct ContentView: View {
                 Text("Select a query.")
             }
         }
+        .sheet(isPresented: $showServerForm) {
+            showServerForm = false
+            print("Sheet dismissed!")
+        } content: {
+            if let serverId = selectedServer,
+               let server = servers.first(where: {$0.id == serverId})
+            {
+                ServerForm(server: server)
+            }
+        }
     }
 
     private func addServer() {
@@ -65,6 +78,9 @@ struct ContentView: View {
             modelContext.insert(newItem)
             let newQuery = JiraQuery(name: "Query 1", jql: "empty jql")
             newItem.queries.append(newQuery)
+            
+            selectedServer = newItem.id            
+            showServerForm = true
         }
     }
     

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class ServerConfiguration: Identifiable, Hashable {
+final class ServerConfiguration: ObservableObject, Identifiable, Hashable {
     @Attribute(.unique) var id: UUID
     var name: String
     var host: String
