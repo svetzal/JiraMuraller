@@ -28,7 +28,7 @@ struct ContentView: View {
                     }
                     .onDelete(perform: deleteSelectedServerIndexes)
                 }
-                .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+                .navigationSplitViewColumnWidth(min: 180, ideal: 230)
                 .navigationTitle("Servers")
                 .toolbar {
                     ToolbarItem {
@@ -36,11 +36,23 @@ struct ContentView: View {
                             Label("Add Server", systemImage: "plus")
                         }
                     }
+                    ToolbarItem {
+                        Button(action: editServer) {
+                            Label("Edit Server", systemImage: "pencil")
+                        }
+                        .disabled(selectedServer == nil)
+                    }
+                    ToolbarItem {
+                        Button(action: deleteServer) {
+                            Label("Delete Server", systemImage: "trash")
+                        }
+                        .disabled(selectedServer == nil)
+                    }
                 }
             }
         } content: {
-            if let serverId = selectedServer {
-                let server = servers.first(where: {$0.id == serverId})!
+            if let serverId = selectedServer,
+               let server = servers.first(where: {$0.id == serverId}) {
                 QueriesListView(server: server, selectedQuery: $selectedQuery)
             } else {
                 Text("Select a server.")
@@ -52,7 +64,7 @@ struct ContentView: View {
             {
                 if let query = server.queries.first(where: {$0.id == queryId})
                 {
-                    IssuesListView(query: query)
+                    IssuesListView(server: server, query: query)
                 } else {
                     Text("Add a query.")
                 }
@@ -68,6 +80,10 @@ struct ContentView: View {
                let server = servers.first(where: {$0.id == serverId})
             {
                 ServerForm(server: server)
+                Button(action: { showServerForm = false }) {
+                    Text("Done")
+                }
+                .padding(.bottom)
             }
         }
     }
@@ -81,6 +97,23 @@ struct ContentView: View {
             
             selectedServer = newItem.id            
             showServerForm = true
+        }
+    }
+    
+    private func editServer() {
+        if let serverId = selectedServer,
+           let server = servers.first(where: {$0.id == serverId})
+        {
+            serverToEdit = server
+            showServerForm = true
+        }
+    }
+    
+    private func deleteServer() {
+        if let serverId = selectedServer,
+           let server = servers.first(where: {$0.id == serverId})
+        {
+            modelContext.delete(server)
         }
     }
     
